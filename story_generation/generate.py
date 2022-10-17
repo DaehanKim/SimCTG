@@ -7,13 +7,13 @@ import pandas as pd
 from tqdm import tqdm
 
 # load model
-model_path = r'/workspace/SimCTG/story_generation/simctg_cnndm/training_step_29000_train_mle_loss_2.756_train_cl_loss_0.002_dev_ppl_16.614'
+model_path = r'/workspace/SimCTG/story_generation/simctg_cnndm_aug_min3/training_step_14000_train_mle_loss_2.805_train_cl_loss_0.002_dev_ppl_16.991'
 pad_token = '<_PAD_>'
 model = SimCTG(model_path, pad_token).cuda()
 model.eval()
 
 test_examples = pickle.load(open(f'../../progressive-generation/data/cnn/test.pickle', 'rb'))
-gen_dir = f'generated_texts/simctg_cnndm/contrastive_search'
+gen_dir = f'generated_texts/simctg_cnndm/contrastive_search_fixed'
 os.makedirs(gen_dir, exist_ok=True)
 
 log_file = open(f'{gen_dir}/gen.txt', 'w')
@@ -29,11 +29,15 @@ for idx, example in enumerate(tqdm(test_examples, desc='Generating')):
 
     beam_width, alpha, decoding_len = 5, 0.65, 1020 - input_ids.size(-1)
     with torch.no_grad():
-        output = model.fast_contrastive_search(input_ids, beam_width, alpha, decoding_len)
+        _, output = model.fast_contrastive_search(input_ids, beam_width, alpha, decoding_len)
     try:
         generated_story = model.tokenizer.decode(output).split(model.tokenizer.eos_token)[1].strip()
     except:
         generated_story = model.tokenizer.decode(output)
+    
+    # generated_story = generated_story.replace(condition, "")
+    generated_story = generated_story.split(pad_token)[0] # truncate in case generated stories are too long
+
     gens.append((condition, truth, generated_story))
 result_df = pd.DataFrame.from_records(gens, columns = ["CONDITION", "TRUTH", "GENERATED"])
 result_df.to_csv(gen_dir + "/gen.txt" ,index=False)

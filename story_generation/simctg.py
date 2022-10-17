@@ -118,6 +118,7 @@ class SimCTG(nn.Module):
         batch_size, seqlen = input_ids.size()
         #generated = [[] for _ in range(batch_size)]
         generated = [item for item in input_ids.tolist()]
+        generated_except_prompt = []
         past_key_values = None
         last_hidden_states = None
         logits = None
@@ -136,7 +137,9 @@ class SimCTG(nn.Module):
             tokens = input_ids.squeeze(dim=-1).tolist()
             for idx, t in enumerate(tokens):
                 generated[idx].append(t)
-        return generated[0]
+                generated_except_prompt.append(t)
+        
+        return generated, generated_except_prompt
 
     def diverse_contrastive_search(self, input_ids, sample_step, nucleus_p, beam_width, alpha, decoding_len):
         '''

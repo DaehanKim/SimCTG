@@ -9,6 +9,11 @@ import numpy as np
 import time
 import logging
 import progressbar
+import wandb 
+
+from utlis import try_wandb_log
+
+
 
 import logging
 logging.getLogger('transformers.generation_utils').disabled = True
@@ -19,6 +24,7 @@ def parse_config():
     # data configuration
     parser.add_argument("--model_name", type=str, default='gpt2')
     parser.add_argument("--train_path", type=str)
+    # parser.add_argument("--train_aug_path", type=str)    
     parser.add_argument("--dev_path", type=str)
     parser.add_argument("--max_len", type=int, help="length of each sequence example")
     # mini-batch training configuration
@@ -72,6 +78,8 @@ def evaluate_dev_set_ppl(data, model, cuda_available, device):
 
 import argparse
 if __name__ == '__main__':
+
+
     if torch.cuda.is_available():
         print ('Cuda is available.')
     cuda_available = torch.cuda.is_available()
@@ -86,6 +94,8 @@ if __name__ == '__main__':
         pass
     args = parse_config()
     device = torch.device('cuda')
+    wandb.init(entity='lucas01', project="simctg", name="cnndm_aug_min3")
+
 
     batch_size_per_gpu, gradient_accumulation_steps, number_of_gpu, effective_batch_size = \
     args.batch_size_per_gpu, args.gradient_accumulation_steps, args.number_of_gpu, args.effective_batch_size
@@ -126,6 +136,7 @@ if __name__ == '__main__':
     all_batch_step = 1
     print_valid, save_valid = False, False
     train_loss, train_cl_loss, min_val_ppl = 0., 0., 1e10
+    wandb_log_tr_loss, wandb_log_cl_loss = 0.,0.
 
     print ('--------------------------------------------------------------------------')
     print ('Start Training:')
@@ -145,13 +156,17 @@ if __name__ == '__main__':
             loss = loss.mean()
             loss.backward()
             train_loss += mle_loss.mean().item()
+            wandb_log_tr_loss += mle_loss.mean().item()
             train_cl_loss += cl_loss.mean().item()
+            wandb_log_cl_loss += cl_loss.mean().item()
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
 
             # parameter update
             if all_batch_step % gradient_accumulation_steps == 0:
                 optimizer.step()
                 scheduler.step()
+                try_wandb_log({'train/ce_loss':wandb_log_tr_loss/gradient_accumulation_steps, 'train/cl_loss' : wandb_log_cl_loss/gradient_accumulation_steps}, step=effective_batch_acm)
+                wandb_log_tr_loss, wandb_log_cl_loss = 0., 0.
                 optimizer.zero_grad()
                 effective_batch_acm += 1
                 print_valid, save_valid = True, True
@@ -175,6 +190,8 @@ if __name__ == '__main__':
 
                 model.eval()
                 one_val_ppl = evaluate_dev_set_ppl(data, model, cuda_available, device)
+                try_wandb_log({'valid/ppl':one_val_ppl, 'valid/min_ppl':min_val_ppl}, step=effective_batch_acm)
+
                 model.train()
 
                 print ('At training steps {}, training MLE loss is {}, train CL loss is {}, validation ppl is {}'.format(effective_batch_acm, 

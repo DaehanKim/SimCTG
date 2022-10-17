@@ -9,6 +9,8 @@ import random
 import numpy as np
 import argparse
 import random
+import wandb 
+from typing import Dict, List
 
 def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')):
     """ Filter a distribution of logits using top-k and/or nucleus (top-p) filtering
@@ -208,3 +210,16 @@ def select_past_key_values(past_key_values, beam_width, selected_idx):
             items.append(item)
         new_key_values.append(items)
     return new_key_values
+
+
+def try_wandb_log(log_dict : Dict, step: int):
+    try:
+        wandb.log(log_dict, step=step)
+    except:
+        print("wandb is not initialized.. passing wandb logging")
+
+def try_wandb_add_example(table_obj : wandb.Table, step:int, src_text: str, gen_text:str, tgt_text:str):
+    try:
+        table_obj.add_data(step, src_text, gen_text, tgt_text)
+    except:
+        print("wandb is not initialized.. passing wandb logging")
