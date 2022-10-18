@@ -8,6 +8,7 @@ import torch
 import numpy as np
 import progressbar
 from torch.nn.utils import rnn
+import itertools
 
 #BUFFER_SIZE = 109600000 # used for pre-training
 BUFFER_SIZE = 40960000
@@ -32,7 +33,13 @@ class Data:
         print ('Dev data loaded.')
 
         self.train_path, self.dev_path = train_path, dev_path
+        # self.aug_train_path = aug_train_path
         self.stream = open(self.train_path, encoding='utf8')
+        # train_files = [self.train_path] if self.aug_train_path is None else [self.train_path, self.aug_train_path]
+        # if len(train_files) > 1 : 
+            # print(f"using augmentation with file {self.aug_train_path}!")
+        # self.stream = [l for _f in train_files for l in open(_f,'r').readlines()]
+        # self.stream = open(self.train_path, 'r')
 
     def pad_batch(self, batch_id_list):
         batch_id_list = [torch.LongTensor(item) for item in batch_id_list]

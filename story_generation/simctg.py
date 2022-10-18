@@ -15,17 +15,23 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from typing import List
+
 train_fct = CrossEntropyLoss()
 val_fct = CrossEntropyLoss(reduction='none')
 class SimCTG(nn.Module):
-    def __init__(self, model_name, pad_token):
+    def __init__(self, model_name, pad_token, task_prefix_tokens: List[str]=None):
         super(SimCTG, self).__init__()
         from transformers import AutoTokenizer, GPT2LMHeadModel
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = GPT2LMHeadModel.from_pretrained(model_name)
         print ('Add PAD token to the tokenizer.')
         print ('Original vocabulary size is {}'.format(len(self.tokenizer)))
+        self.task_prefix_tokens = task_prefix_tokens
         self.tokenizer.add_tokens([pad_token])
+        if self.task_prefix_tokens is not None:
+            self.tokenizer.add_tokens(self.task_prefix_tokens)
+            print(f"added prefix tokens {self.task_prefix_tokens}")
         print ('Vocabulary size after extension is {}'.format(len(self.tokenizer)))
         assert len(self.tokenizer.convert_tokens_to_ids([pad_token])) == 1
         self.model.resize_token_embeddings(len(self.tokenizer)) 

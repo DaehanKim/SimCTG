@@ -23,8 +23,9 @@ def parse_config():
     parser = argparse.ArgumentParser()
     # data configuration
     parser.add_argument("--model_name", type=str, default='gpt2')
+    parser.add_argument("--experiment", type=str, default='cnndm_bt_newtoken')
+    parser.add_argument("--task_prefixes", type=str, default='')
     parser.add_argument("--train_path", type=str)
-    # parser.add_argument("--train_aug_path", type=str)    
     parser.add_argument("--dev_path", type=str)
     parser.add_argument("--max_len", type=int, help="length of each sequence example")
     # mini-batch training configuration
@@ -94,7 +95,7 @@ if __name__ == '__main__':
         pass
     args = parse_config()
     device = torch.device('cuda')
-    wandb.init(entity='lucas01', project="simctg", name="cnndm_aug_min3")
+    wandb.init(entity='lucas01', project="simctg", name=args.experiment)
 
 
     batch_size_per_gpu, gradient_accumulation_steps, number_of_gpu, effective_batch_size = \
@@ -113,7 +114,9 @@ if __name__ == '__main__':
 
     print ('Initializing model...')
     from simctg import SimCTG
-    model = SimCTG(model_name, data.pad_token)
+    if args.task_prefixes:
+        args.task_prefixes = args.task_prefixes.split(",")
+    model = SimCTG(model_name, data.pad_token, args.task_prefixes)
     if cuda_available:
         if multi_gpu_training:
             model = nn.DataParallel(model) # multi-gpu training
