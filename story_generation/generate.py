@@ -23,6 +23,7 @@ def main(model_path = r'/workspace/SimCTG/story_generation/simctg_cnndm_aug_min3
     log_file = open(f'{gen_dir}/gen.txt', 'w')
     gens = []
     for idx, example in enumerate(tqdm(test_examples, desc='Generating')):
+        # if idx > 2: break
         # condition = r'''A bomb blast at a coffee shop north of Baghdad kills one, wounds nine, police say. An anti-government demonstration organizer is gunned down in Haditha, police say. Roadside bomb blasts in Baghdad killed three, wound six, police say.'''
         # if idx > 3 : break
         condition, truth = example['condition'], example['text']
@@ -34,14 +35,11 @@ def main(model_path = r'/workspace/SimCTG/story_generation/simctg_cnndm_aug_min3
 
         beam_width, alpha, decoding_len = 5, 0.65, 1020 - input_ids.size(-1)
         with torch.no_grad():
-            _, output = model.fast_contrastive_search(input_ids, beam_width, alpha, decoding_len)
-        try:
-            generated_story = model.tokenizer.decode(output).split(model.tokenizer.eos_token)[1].strip()
-        except:
-            generated_story = model.tokenizer.decode(output)
-        
+            whole_out, output = model.fast_contrastive_search(input_ids, beam_width, alpha, decoding_len)
+        generated_story = model.tokenizer.decode(output)
         # generated_story = generated_story.replace(condition, "")
-        generated_story = generated_story.split(pad_token)[0] # truncate in case generated stories are too long
+        generated_story = generated_story.replace(pad_token, " ").replace(model.tokenizer.eos_token, "").strip()
+        # generated_story = generated_story.split(pad_token)[0] # truncate in case generated stories are too long
 
         gens.append((condition, truth, generated_story))
     result_df = pd.DataFrame.from_records(gens, columns = ["CONDITION", "TRUTH", "GENERATED"])
