@@ -1,8 +1,8 @@
-CUDA_VISIBLE_DEVICES=5 nohup python train.py\
+CUDA_VISIBLE_DEVICES=6 nohup python train.py\
     --model_name gpt2\
-    --experiment cnndm_augmin3_bsz16\
+    --experiment cnndm_bsz16\
     --task_prefixes ""\
-    --train_path ../data/CnnDm/cnndm_trainaug_min3.txt\
+    --train_path ../data/CnnDm/cnndm_train.txt\
     --dev_path ../data/CnnDm/cnndm_valid.txt\
     --max_len 1024\
     --number_of_gpu 1\
@@ -14,4 +14,4 @@ CUDA_VISIBLE_DEVICES=5 nohup python train.py\
     --save_every 1000\
     --learning_rate 2e-5\
     --margin 0.5\
-    --save_path_prefix ./simctg_cnndm_aug_bsz16/ &> simctg_aug_min3_bsz16.out &
+    --save_path_prefix ./simctg_cnndm_bsz16/ &> simctg_bsz16.out &
